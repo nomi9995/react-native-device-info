@@ -13,6 +13,7 @@
 #import <React/RCTUtils.h>
 #import "RNDeviceInfo.h"
 #import "DeviceUID.h"
+#import <WebKit/WebKit.h>
 
 #if !(TARGET_OS_TV)
 #import <LocalAuthentication/LocalAuthentication.h>
@@ -35,6 +36,7 @@ typedef NS_ENUM(NSInteger, DeviceType) {
 @implementation RNDeviceInfo
 {
     bool hasListeners;
+    WKWebView *_webView;
 }
 
 @synthesize isEmulator;
@@ -229,16 +231,6 @@ RCT_EXPORT_MODULE();
 #endif
 }
 
-- (NSString*) userAgent
-{
-#if TARGET_OS_TV
-    return @"not available";
-#else
-    UIWebView* webView = [[UIWebView alloc] initWithFrame:CGRectZero];
-    return [webView stringByEvaluatingJavaScriptFromString:@"navigator.userAgent"];
-#endif
-}
-
 - (NSString*) deviceLocale
 {
     NSString *language = [[NSLocale preferredLanguages] firstObject];
@@ -386,7 +378,6 @@ RCT_EXPORT_MODULE();
              @"buildId": [self getBuildId],
              @"systemManufacturer": @"Apple",
              @"carrier": self.carrier ?: [NSNull null],
-             @"userAgent": self.userAgent ?: [NSNull null],
              @"timezone": self.timezone ?: [NSNull null],
              @"isEmulator": @(self.isEmulator),
              @"isTablet": @(self.isTablet),
@@ -531,6 +522,30 @@ RCT_EXPORT_METHOD(getAvailableLocationProviders:(RCTPromiseResolveBlock)resolve 
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+RCT_EXPORT_METHOD(getUserAgent:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (_webView == nil) {
+            _webView = [[WKWebView alloc] initWithFrame:CGRectZero];
+        }
+        [_webView evaluateJavaScript:@"navigator.userAgent" completionHandler:^(id result, NSError * error) {
+            if (error == nil) {
+                NSString * returnedValue = @"";
+                if (result != nil && [result isKindOfClass:[NSString class]]) {
+                    returnedValue = result;
+                }
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                    resolve(returnedValue);
+                });
+            } else {
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                    reject(@"evaluate_js_failed", [NSString stringWithFormat:@"evaluateJavaScript error : %@", error.localizedDescription], error);
+                });
+            }
+        }];
+    });
 }
 
 @end

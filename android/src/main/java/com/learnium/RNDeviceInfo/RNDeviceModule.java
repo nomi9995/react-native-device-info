@@ -204,6 +204,19 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     String ipAddress = Formatter.formatIpAddress(getWifiInfo().getIpAddress());
     p.resolve(ipAddress);
   }
+
+   @ReactMethod
+  public void getUserAgent(Promise p) {
+    String userAgent = "";
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      try {
+        userAgent = WebSettings.getDefaultUserAgent(this.reactContext);
+      } catch (RuntimeException e) {
+        userAgent = System.getProperty("http.agent");
+      }
+    }
+    p.resolve(userAgent);
+  }
  
   @ReactMethod
   public void getCameraPresence(Promise p) {
@@ -461,15 +474,7 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     constants.put("uniqueId", Settings.Secure.getString(this.reactContext.getContentResolver(), Settings.Secure.ANDROID_ID));
     constants.put("systemManufacturer", Build.MANUFACTURER);
     constants.put("bundleId", packageName);
-    try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-        constants.put("userAgent", WebSettings.getDefaultUserAgent(this.reactContext));
-      } else {
-        constants.put("userAgent", System.getProperty("http.agent"));
-      }
-    } catch (RuntimeException e) {
-      constants.put("userAgent", System.getProperty("http.agent"));
-    }
+    
     constants.put("timezone", TimeZone.getDefault().getID());
     constants.put("isEmulator", this.isEmulator());
     constants.put("isTablet", this.isTablet());
