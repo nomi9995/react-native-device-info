@@ -378,7 +378,6 @@ RCT_EXPORT_MODULE();
              @"buildId": [self getBuildId],
              @"systemManufacturer": @"Apple",
              @"carrier": self.carrier ?: [NSNull null],
-             @"userAgent": self.userAgent ?: [NSNull null],
              @"timezone": self.timezone ?: [NSNull null],
              @"isEmulator": @(self.isEmulator),
              @"isTablet": @(self.isTablet),
